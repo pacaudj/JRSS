@@ -11,10 +11,13 @@ import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
-import javafx.stage.Window;
+
 import javax.json.Json;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.StringReader;
 
 public class AuthController {
@@ -32,8 +35,7 @@ public class AuthController {
     private Label authStatus;
 
     @FXML
-    protected void handleSubmitButtonAction(ActionEvent event) {
-        Window owner = submitButton.getScene().getWindow();
+    protected void handleSubmitButtonAction() {
         String postData = Json.createObjectBuilder()
                 .add("email", emailField.getText())
                 .add("password", passwordField.getText())
@@ -53,20 +55,33 @@ public class AuthController {
             System.out.println("result = " + result);
             JsonReader jsonReader = Json.createReader(new StringReader(result));
             JsonObject object = jsonReader.readObject();
-            authStatus.setText(object.getString("status:") + '\n' + "Your token is : " + object.getString("token"));
-            authStatus.setTextFill(Color.web("#32CD32"));
+            writeTokenToFile(object.getString("token"));
+        }
+        if (rqst.tryAuth()) {
+            try {
+                Stage stage = (Stage) submitButton.getScene().getWindow();
+                Parent root = FXMLLoader.load(getClass().getClassLoader().getResource("SourceView.fxml"));
+                stage.setScene(new Scene(root,1500, 1300));
+                stage.show();
+            } catch(Exception err) {
+                System.out.println(err.getMessage());
+            }
+        }
+    }
+
+    public void writeTokenToFile(String token) {
+        try (BufferedWriter bw = new BufferedWriter(new PrintWriter("token.txt"))) {
+            bw.write(token);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
     @FXML
     protected void handleRegisterButtonAction(ActionEvent event) throws Exception{
-        Parent root;
-        Stage stage;
-
-        stage = (Stage) registerButton.getScene().getWindow();
-        root = FXMLLoader.load(getClass().getClassLoader().getResource("Register.fxml"));
-        Scene scene = new Scene(root,500, 300);
-        stage.setScene(scene);
+        Stage stage = (Stage) registerButton.getScene().getWindow();
+        Parent root = FXMLLoader.load(getClass().getClassLoader().getResource("Register.fxml"));
+        stage.setScene(new Scene(root,500, 300));
         stage.show();
     }
 }
